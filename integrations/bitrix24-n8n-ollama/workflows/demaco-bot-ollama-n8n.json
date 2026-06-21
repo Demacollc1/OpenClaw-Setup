@@ -1,0 +1,282 @@
+{
+  "name": "Demaco RoberthV2 - Bitrix24 + Ollama (n8n)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demaco-bot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook (imbot Bitrix24)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1360, 360],
+      "webhookId": "demaco-bot"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bitrix24 entrega los eventos del bot (ONIMBOTMESSAGEADD / ONIMBOTJOINCHAT)\n// como application/x-www-form-urlencoded. n8n los expone en body con claves\n// anidadas tipo data[PARAMS][MESSAGE]. Este nodo normaliza todo a campos planos.\nconst raw = $input.first().json;\nconst body = raw.body || raw;\n\nfunction get(...paths) {\n  for (const p of paths) {\n    // soporta clave plana 'data[PARAMS][MESSAGE]' o navegacion por objeto\n    if (body[p] !== undefined && body[p] !== null && body[p] !== '') return body[p];\n  }\n  return '';\n}\nfunction nav(obj, keys) {\n  let cur = obj;\n  for (const k of keys) { if (cur && cur[k] !== undefined) cur = cur[k]; else return ''; }\n  return cur === undefined || cur === null ? '' : cur;\n}\n\nconst event = get('event') || nav(body, ['event']);\nconst message = get('data[PARAMS][MESSAGE]') || nav(body, ['data','PARAMS','MESSAGE']);\nconst dialogId = get('data[PARAMS][DIALOG_ID]') || nav(body, ['data','PARAMS','DIALOG_ID']);\nconst chatId = get('data[PARAMS][CHAT_ID]') || nav(body, ['data','PARAMS','CHAT_ID']);\nconst fromUserId = get('data[PARAMS][FROM_USER_ID]') || nav(body, ['data','PARAMS','FROM_USER_ID']);\nconst botId = get('data[BOT][0][BOT_ID]') || nav(body, ['data','BOT']) || '';\nconst appToken = get('auth[application_token]') || nav(body, ['auth','application_token']);\n\nconst userName = get('data[USER][NAME]','data[USER][FULL_NAME]') || nav(body, ['data','USER','NAME']) || nav(body, ['data','USER','FULL_NAME']);\nconst userEmail = get('data[USER][EMAIL]') || nav(body, ['data','USER','EMAIL']);\nconst userPhone = get('data[USER][PHONES]','data[USER][PHONE]') || nav(body, ['data','USER','PHONES']) || nav(body, ['data','USER','PHONE']);\n\nreturn [{ json: {\n  event: String(event || ''),\n  message: String(message || '').trim(),\n  dialogId: String(dialogId || ''),\n  chatId: String(chatId || ''),\n  fromUserId: String(fromUserId || ''),\n  botId: String(botId || ''),\n  appToken: String(appToken || ''),\n  userName: String(userName || ''),\n  userEmail: String(userEmail || ''),\n  userPhone: String(userPhone || '')\n} }];"
+      },
+      "id": "node-parse",
+      "name": "Parsear evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1140, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "c-token",
+              "leftValue": "={{ $json.appToken }}",
+              "rightValue": "={{ $env.BITRIX_OUTBOUND_TOKEN }}",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "c-msg",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            },
+            {
+              "id": "c-notbot",
+              "leftValue": "={{ $json.fromUserId }}",
+              "rightValue": "0",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-validate",
+      "name": "Validar evento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-920, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {}
+      },
+      "id": "node-ignore",
+      "name": "Ignorar (200 OK)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-700, 540]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}/crm.duplicate.findbycomm.json",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "entity_type", "value": "CONTACT" },
+            { "name": "type", "value": "={{ $json.userEmail ? 'EMAIL' : 'PHONE' }}" },
+            { "name": "values[0]", "value": "={{ $json.userEmail || $json.userPhone || 'sin-dato' }}" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "node-crm-find",
+      "name": "CRM: buscar contacto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-700, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Determina si el prospecto YA existe en el CRM y arma el system prompt\n// con la logica de las misiones del bot original (Demaco / RoberthV2).\nconst ev = $('Parsear evento').item.json;\nconst crm = $input.first().json;\n\n// crm.duplicate.findbycomm -> result.CONTACT = [ids] cuando hay coincidencia.\nlet contactId = '';\ntry {\n  const r = (crm && crm.result) || {};\n  const ids = r.CONTACT || r.contact || [];\n  if (Array.isArray(ids) && ids.length) contactId = String(ids[0]);\n} catch (e) {}\nconst existe = !!contactId;\n\n// ----- Memoria de conversacion por DIALOG_ID (estado entre mensajes) -----\nconst store = $getWorkflowStaticData('global');\nconst key = 'hist_' + ev.dialogId;\nconst history = Array.isArray(store[key]) ? store[key] : [];\n\n// Directorio de locales (el bot responde ubicaciones).\nconst locales = [\n  'Guayaquil - Demaco Matriz (B2): Cjon. 2Do Cjon. 14A N-E y Psje. Francisco Illingworth, Cdla. Santa Leonor. Tel (04)606-592 / (04)606-602. ventas@demaco.ec',\n  'Guayaquil - Demaco Americas (B41): Psje. 2Do Paseo 14 N-E y Av. De las Americas. Tel (04)228-9000',\n  'Guayaquil - Demaco Centro (B1): Machala y Colon, C. 8 S-O. Tel (04)232-6635. ventas@demaco.ec',\n  'Guayaquil - Demaco Portete (B87): Pasando la planta de Duragas, Urb. Jardines del Salado, Via a la Costa. Tel (04)287-9335. ventas@demaco.ec',\n  'Quito - Demaco Quito Norte (B10): Av. Quito Norte y calle 123. Tel (02)223-2431 / 0967471632. quito@demaco.ec',\n  'Quito - Demaco Quito Sur (B15): Av. Quito Sur y calle 456. Tel (02)2438737. quito@demaco.ec',\n  'Ambato - Demaco Ambato Centro (B25): Av. Ambato Centro y calle 789. Tel (03)282-5866. izamba@demaco.ec',\n  'Ambato - Demaco Ambato Sur (B26): Av. Ambato Sur y calle 202. Tel (03)241-9114. ambato3@demaco.ec',\n  'Ambato - Demaco Ambato Norte (B23): Av. Ambato Norte y calle 101. Tel (03)285-4099. ambato2@demaco.ec',\n  'Portoviejo - Demaco Portoviejo (B50): Av. Portoviejo y calle 303. Tel (05)293-4819. portoviejo@demaco.ec'\n].join('\\n');\n\nconst contexto = existe\n  ? `El cliente YA EXISTE en el CRM (contactId=${contactId}). Mision: mantener su ficha actualizada (Nombre, Email, Telefono, Ciudad, RUC/Cedula y Razon social si es empresa). Puede saltar la actualizacion con la palabra \"Saltar\". Luego ayuda a capturar su requerimiento de productos.`\n  : `El cliente es un PROSPECTO NUEVO (no esta en el CRM). Mision: calificarlo y capturar Nombre, si compra como persona natural o empresa, RUC/Cedula, razon social (si empresa), Telefono, Email, Ciudad y tipo de venta (B2B mayoreo / B2C consumidor final).`;\n\nconst systemPrompt = `Eres \"Roberth\", asistente comercial digital de DEMACO (distribuidor de ferreteria en Ecuador). Atiendes por chat (WhatsApp/Open Lines). Hablas espanol, eres amable, servicial y usas emojis con moderacion.\n\n${contexto}\n\nReglas:\n- Dirigete a la persona por su nombre cuando lo sepas.\n- Si piden precios o cotizaciones de inmediato, explica que por politica corporativa necesitamos los datos para crear un perfil de precios, y que el precio difiere entre B2B (mayoreo/ferreteria) y B2C (proyectos/publico).\n- Si preguntan disponibilidad o existencias de inventario, indica que un asesor se lo confirmara en un momento.\n- Si preguntan por horarios, locales o ubicaciones, responde directamente con estos datos:\n${locales}\nTodas las sucursales estan en Google Maps con la palabra \"Demaco\".\n- Para entregas a domicilio pide direccion, ciudad, geolocalizacion y contacto de quien recibe. El transporte es gratis para compras sobre $50.00.\n- Si el cliente escribe \"Operador\" o pide hablar con una persona, transfiere a un asesor.\n- Intenta recopilar la informacion en la menor cantidad de interacciones posibles. No inventes datos ni respondas fuera de tu mision.\n\nDebes responder SIEMPRE en JSON valido con esta forma exacta (sin texto adicional):\n{\n  \"respuesta\": \"texto que se enviara al cliente en el chat\",\n  \"accion\": \"responder\" | \"crear_lead\" | \"actualizar_ficha\" | \"transferir\",\n  \"datos\": {\n    \"Nombre\": \"\", \"Telefono\": \"\", \"Email\": \"\", \"Ciudad\": \"\",\n    \"Tipo_venta\": \"\", \"Ruc_cedula\": \"\", \"Razon_social\": \"\",\n    \"Lista_productos\": \"\", \"Direccion_entrega\": \"\", \"Ciudad_entrega\": \"\", \"Contacto_entrega\": \"\"\n  }\n}\nCriterios para \"accion\":\n- \"transferir\": si el cliente lo pide, dice \"Operador\", o ya capturaste su requerimiento de productos y debe pasar a un asesor para cotizar.\n- \"crear_lead\": cliente NUEVO del que ya capturaste al menos Nombre y un dato de contacto (Telefono o Email).\n- \"actualizar_ficha\": cliente EXISTENTE del que recopilaste/confirmaste datos nuevos.\n- \"responder\": en cualquier otro caso (seguir la conversacion). Rellena en \"datos\" solo los campos que conozcas; deja \"\" los demas.`;\n\n// Mensajes para Ollama: system + historial + mensaje actual.\nconst messages = [{ role: 'system', content: systemPrompt }];\nfor (const h of history) messages.push(h);\nmessages.push({ role: 'user', content: ev.message });\n\nconst ollamaBody = {\n  model: $env.OLLAMA_MODEL || 'llama3.1',\n  stream: false,\n  format: 'json',\n  options: { temperature: 0.3 },\n  messages\n};\n\nreturn [{ json: { ...ev, existe, contactId, historyKey: key, ollamaBody } }];"
+      },
+      "id": "node-context",
+      "name": "Contexto + memoria + prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OLLAMA_URL }}/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.ollamaBody) }}",
+        "options": { "timeout": 120000 }
+      },
+      "id": "node-ollama",
+      "name": "Ollama (llama3.1)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-260, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Procesa la respuesta JSON de Ollama y guarda el turno en la memoria.\nconst ctx = $('Contexto + memoria + prompt').item.json;\nconst res = $input.first().json;\n\nlet content = '';\ntry { content = res.message ? res.message.content : (res.content || ''); } catch (e) {}\n\nlet parsed = { respuesta: '', accion: 'responder', datos: {} };\ntry {\n  parsed = typeof content === 'string' ? JSON.parse(content) : content;\n} catch (e) {\n  // Si el modelo no devolvio JSON limpio, usa el texto como respuesta directa.\n  parsed = { respuesta: String(content || 'Disculpa, no te entendi. Puedes repetirlo? 🙂'), accion: 'responder', datos: {} };\n}\nparsed.respuesta = parsed.respuesta || 'En un momento te ayudo. 🙂';\nparsed.accion = parsed.accion || 'responder';\nparsed.datos = parsed.datos || {};\n\n// Guardar turno en memoria (recortando a los ultimos 12 mensajes).\nconst store = $getWorkflowStaticData('global');\nconst hist = Array.isArray(store[ctx.historyKey]) ? store[ctx.historyKey] : [];\nhist.push({ role: 'user', content: ctx.message });\nhist.push({ role: 'assistant', content: parsed.respuesta });\nstore[ctx.historyKey] = hist.slice(-12);\n\nreturn [{ json: {\n  dialogId: ctx.dialogId,\n  chatId: ctx.chatId,\n  existe: ctx.existe,\n  contactId: ctx.contactId,\n  userName: ctx.userName,\n  userEmail: ctx.userEmail,\n  userPhone: ctx.userPhone,\n  respuesta: parsed.respuesta,\n  accion: parsed.accion,\n  datos: parsed.datos\n} }];"
+      },
+      "id": "node-process",
+      "name": "Procesar respuesta IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}/imbot.message.add.json",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "BOT_ID", "value": "={{ $env.BITRIX_BOT_ID }}" },
+            { "name": "DIALOG_ID", "value": "={{ $json.dialogId }}" },
+            { "name": "MESSAGE", "value": "={{ $json.respuesta }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-send",
+      "name": "Enviar respuesta al chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 280]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "loose" },
+                "conditions": [
+                  { "leftValue": "={{ $json.accion }}", "rightValue": "crear_lead", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "crear_lead"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "loose" },
+                "conditions": [
+                  { "leftValue": "={{ $json.accion }}", "rightValue": "actualizar_ficha", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "actualizar_ficha"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "loose" },
+                "conditions": [
+                  { "leftValue": "={{ $json.accion }}", "rightValue": "transferir", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "transferir"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" },
+        "looseTypeValidation": true
+      },
+      "id": "node-switch",
+      "name": "Accion CRM",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [400, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}/crm.lead.add.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"TITLE\": {{ JSON.stringify((($json.datos && $json.datos.Nombre) || $json.userName || 'Prospecto') + ' - Chat Demaco') }},\n    \"NAME\": {{ JSON.stringify(($json.datos && $json.datos.Nombre) || $json.userName || '') }},\n    \"SOURCE_ID\": \"WEB\",\n    \"STATUS_ID\": \"DETAILS\",\n    \"ADDRESS_CITY\": {{ JSON.stringify(($json.datos && $json.datos.Ciudad) || '') }},\n    \"COMMENTS\": {{ JSON.stringify('Tipo de venta: ' + (($json.datos && $json.datos.Tipo_venta) || '') + '. Requerimiento: ' + (($json.datos && $json.datos.Lista_productos) || '')) }},\n    \"PHONE\": [{ \"VALUE\": {{ JSON.stringify(($json.datos && $json.datos.Telefono) || $json.userPhone || '') }}, \"VALUE_TYPE\": \"WORK\" }],\n    \"EMAIL\": [{ \"VALUE\": {{ JSON.stringify(($json.datos && $json.datos.Email) || $json.userEmail || '') }}, \"VALUE_TYPE\": \"WORK\" }],\n    \"UF_CRM_1535722030\": {{ JSON.stringify(($json.datos && $json.datos.Ruc_cedula) || '') }}\n  }\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "node-lead-add",
+      "name": "CRM: crear lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}/crm.contact.update.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id\": {{ JSON.stringify($json.contactId) }},\n  \"fields\": {\n    \"NAME\": {{ JSON.stringify(($json.datos && $json.datos.Nombre) || $json.userName || '') }},\n    \"UF_CRM_5B89426D4565C\": {{ JSON.stringify(($json.datos && $json.datos.Ruc_cedula) || '') }}\n  }\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "node-contact-update",
+      "name": "CRM: actualizar contacto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}/imopenlines.bot.session.operator.json",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "CHAT_ID", "value": "={{ $json.chatId || $json.dialogId }}" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "node-transfer",
+      "name": "Transferir a asesor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {}
+      },
+      "id": "node-done",
+      "name": "Fin (200 OK)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 280]
+    }
+  ],
+  "connections": {
+    "Webhook (imbot Bitrix24)": { "main": [[{ "node": "Parsear evento", "type": "main", "index": 0 }]] },
+    "Parsear evento": { "main": [[{ "node": "Validar evento", "type": "main", "index": 0 }]] },
+    "Validar evento": {
+      "main": [
+        [{ "node": "CRM: buscar contacto", "type": "main", "index": 0 }],
+        [{ "node": "Ignorar (200 OK)", "type": "main", "index": 0 }]
+      ]
+    },
+    "CRM: buscar contacto": { "main": [[{ "node": "Contexto + memoria + prompt", "type": "main", "index": 0 }]] },
+    "Contexto + memoria + prompt": { "main": [[{ "node": "Ollama (llama3.1)", "type": "main", "index": 0 }]] },
+    "Ollama (llama3.1)": { "main": [[{ "node": "Procesar respuesta IA", "type": "main", "index": 0 }]] },
+    "Procesar respuesta IA": { "main": [[{ "node": "Enviar respuesta al chat", "type": "main", "index": 0 }]] },
+    "Enviar respuesta al chat": { "main": [[{ "node": "Accion CRM", "type": "main", "index": 0 }]] },
+    "Accion CRM": {
+      "main": [
+        [{ "node": "CRM: crear lead", "type": "main", "index": 0 }],
+        [{ "node": "CRM: actualizar contacto", "type": "main", "index": 0 }],
+        [{ "node": "Transferir a asesor", "type": "main", "index": 0 }],
+        [{ "node": "Fin (200 OK)", "type": "main", "index": 0 }]
+      ]
+    },
+    "CRM: crear lead": { "main": [[{ "node": "Fin (200 OK)", "type": "main", "index": 0 }]] },
+    "CRM: actualizar contacto": { "main": [[{ "node": "Fin (200 OK)", "type": "main", "index": 0 }]] },
+    "Transferir a asesor": { "main": [[{ "node": "Fin (200 OK)", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
