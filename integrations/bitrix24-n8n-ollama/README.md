@@ -20,35 +20,38 @@ CRM y transfiere a un asesor cuando corresponde.
 
 Hay **dos workflows** que replican el flujo de RoberthV2; elige según cómo quieras operar el CRM:
 
-| | **A. Determinista (HTTP)** | **B. AI Agent + MCP** |
+| | **A. Determinista (HTTP)** | **B. AI Agent + herramientas** |
 |---|---|---|
-| Archivo | `demaco-bot-ollama-n8n.json` | `demaco-bot-agent-mcp-n8n.json` |
+| Archivo | `demaco-bot-ollama-n8n.json` | `demaco-bot-agent-tools-n8n.json` |
 | Cómo conversa | Nodo HTTP a `Ollama /api/chat`, respuesta en JSON | Nodo **AI Agent** de n8n con modelo Ollama |
-| Cómo toca el CRM | Nodos HTTP fijos + `Switch` por acción | El agente llama **herramientas vía MCP** y decide |
+| Cómo toca el CRM | Nodos HTTP fijos + `Switch` por acción | El agente llama **herramientas** (*HTTP Request Tool*) y decide |
 | Memoria | `static data` por `DIALOG_ID` | Nodo *Window Buffer Memory* por `DIALOG_ID` |
 | Cuándo usarla | Flujo predecible, fácil de auditar | Más flexible/“agéntico”; el modelo orquesta las acciones |
 
-> La variante **B** es la que pediste: agente con **MCP de IA**. El CRM se expone como
-> herramientas a través de un **servidor MCP** (ver `setup/bitrix24-mcp-server/`), y el agente
-> (Ollama `llama3.1`) decide cuándo buscar contacto, crear lead, actualizar ficha o transferir.
+> La variante **B** es un **AI Agent** (Ollama `llama3.1`) con cuatro herramientas nativas de
+> n8n (`crm_find_contact`, `crm_create_lead`, `crm_update_contact`, `openlines_transfer`),
+> cada una un nodo *HTTP Request Tool* que pega al REST de Bitrix24. El agente decide cuándo
+> usarlas. No requiere instalar nodos de comunidad ni un servidor externo.
+>
+> **Sobre MCP:** el endpoint oficial `mcp-dev.bitrix24.com/mcp` es un MCP de **documentación**
+> de la API (búsqueda/consulta de métodos REST), no opera el CRM, así que no sirve como
+> herramienta del bot. Sí es útil como asistente de desarrollo. Las llamadas REST de esta
+> integración (`crm.duplicate.findbycomm`, `crm.lead.add`, `crm.contact.update`,
+> `imopenlines.bot.session.operator`) fueron verificadas contra esa documentación oficial.
 
 ## Contenido
 
 ```
 integrations/bitrix24-n8n-ollama/
 ├── README.md                              # Esta guía
-├── .env.example                           # Variables necesarias (Bitrix24 + Ollama + MCP)
+├── .env.example                           # Variables necesarias (Bitrix24 + Ollama)
 ├── workflows/
 │   ├── demaco-bot-ollama-n8n.json         # Variante A: determinista (HTTP)
-│   └── demaco-bot-agent-mcp-n8n.json      # Variante B: AI Agent + MCP
+│   └── demaco-bot-agent-tools-n8n.json    # Variante B: AI Agent + herramientas nativas
 ├── prompts/
 │   └── system-prompt-demaco.md            # El prompt de Roberth (documentado)
 └── setup/
-    ├── register-imbot.md                  # Registro único del chatbot en Bitrix24
-    └── bitrix24-mcp-server/               # Servidor MCP de Bitrix24 (para la variante B)
-        ├── server.js                      # 4 herramientas: find/lead/update/transfer
-        ├── package.json · .env.example
-        └── README.md
+    └── register-imbot.md                  # Registro único del chatbot en Bitrix24
 ```
 
 ## Arquitectura (flujo de un mensaje)
@@ -99,28 +102,32 @@ guarda el `BOT_ID` en `BITRIX_BOT_ID`, captura el `application_token` en
   RUC/Cédula del lead y `UF_CRM_5B89426D4565C` del contacto) en los nodos
   **"CRM: crear lead"** y **"CRM: actualizar contacto"**.
 
-## Variante B: AI Agent + MCP (pasos adicionales)
+## Variante B: AI Agent + herramientas nativas (pasos específicos)
 
 La variante B reutiliza el webhook entrante y el registro del bot (pasos 1 y 3 de arriba).
 Lo específico es cómo conversa y cómo toca el CRM:
 
-1. **Credencial de Ollama en n8n.** Crea en n8n una credencial **"Ollama"** con la URL base
-   de tu servidor (`http://localhost:11434` o la que corresponda) y asígnala al nodo
+1. **Importa** `workflows/demaco-bot-agent-tools-n8n.json` en n8n. Requiere una versión de
+   n8n con los nodos de **IA / LangChain** habilitados (AI Agent, Ollama Chat Model, Window
+   Buffer Memory, HTTP Request Tool). Al importar, n8n puede pedirte ajustar la *typeVersion*
+   de algún nodo: acéptalo.
+2. **Credencial de Ollama en n8n.** Crea una credencial **"Ollama"** con la URL base de tu
+   servidor (`http://localhost:11434` o la que corresponda) y asígnala al nodo
    **"Ollama Chat Model"**. (En esta variante la URL de Ollama va en la credencial, no en
    `OLLAMA_URL`.)
-2. **Levanta el servidor MCP de Bitrix24.** Sigue
-   [`setup/bitrix24-mcp-server/README.md`](./setup/bitrix24-mcp-server/README.md):
-   `cp .env.example .env`, edita `BITRIX_WEBHOOK_URL`, `npm install` y arráncalo. Expondrá
-   `http://<host>:3001/sse`.
-3. **Apunta el agente al MCP.** Define la variable **`BITRIX_MCP_URL`** con ese endpoint SSE
-   (el nodo *"Bitrix24 MCP (CRM)"* la lee). Si pusiste `MCP_AUTH_TOKEN`, configura *Bearer*
-   en ese nodo.
-4. **Importa y activa** `workflows/demaco-bot-agent-mcp-n8n.json`. El nodo Webhook usa la ruta
-   `demaco-bot-agent`; registra el bot apuntando `EVENT_MESSAGE_ADD` a **esa** Production URL.
+3. **Variables.** Define `BITRIX_WEBHOOK_URL`, `BITRIX_BOT_ID`, `BITRIX_OUTBOUND_TOKEN` y
+   `OLLAMA_MODEL` (igual que la variante A). Las cuatro herramientas pegan al REST de Bitrix24
+   con `BITRIX_WEBHOOK_URL`.
+4. **Activa** el workflow. El nodo Webhook usa la ruta `demaco-bot-agent`; registra el bot
+   apuntando `EVENT_MESSAGE_ADD` a **esa** Production URL.
 
-> El agente decide cuándo usar cada herramienta MCP (`crm_find_contact`, `crm_create_lead`,
-> `crm_update_contact`, `openlines_transfer`). Los nombres en el system prompt del nodo
-> *"Roberth (AI Agent)"* deben coincidir con los que exponga tu servidor MCP.
+> El agente decide cuándo usar cada herramienta (`crm_find_contact`, `crm_create_lead`,
+> `crm_update_contact`, `openlines_transfer`). Cada una es un nodo *HTTP Request Tool* con
+> *placeholders* que el modelo rellena. Para añadir RUC/Cédula u otros campos personalizados,
+> agrega el código `UF_CRM_...` correspondiente en el `jsonBody` del nodo de la herramienta.
+>
+> *Alternativa:* si instalas el nodo de comunidad de Bitrix24 en tu n8n, puedes sustituir
+> estos *HTTP Request Tool* por ese nodo configurado como herramienta del agente.
 
 ## Verificación end-to-end
 1. **Ollama responde:**
