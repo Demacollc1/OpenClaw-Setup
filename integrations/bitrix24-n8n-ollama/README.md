@@ -50,9 +50,16 @@ integrations/bitrix24-n8n-ollama/
 │   └── demaco-bot-agent-tools-n8n.json    # Variante B: AI Agent + herramientas nativas
 ├── prompts/
 │   └── system-prompt-demaco.md            # El prompt de Roberth (documentado)
+├── design/
+│   └── flujo-multiagente.md               # Diseño: router + 5 agentes especializados
 └── setup/
     └── register-imbot.md                  # Registro único del chatbot en Bitrix24
 ```
+
+> **Hacia dónde vamos:** [`design/flujo-multiagente.md`](./design/flujo-multiagente.md)
+> describe la evolución a una **arquitectura multi-agente** (un router de intención + agentes
+> especializados de cotización, posventa, información, compras/bodega y marketing). Los dos
+> workflows de abajo son la base de un solo agente sobre la que se construye ese diseño.
 
 ## Arquitectura (flujo de un mensaje)
 
