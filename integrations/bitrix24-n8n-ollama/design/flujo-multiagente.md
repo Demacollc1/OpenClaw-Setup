@@ -75,8 +75,7 @@ Cada ficha define: **propósito**, **datos que capta**, **herramientas/fuentes**
 - **Capta**: Nombre, persona natural o empresa, RUC/Cédula, Razón social, Teléfono, Email, Ciudad,
   tipo de venta (B2B/B2C), **lista de productos** (ítems + cantidades).
 - **Herramientas/fuentes**:
-  - `product_lookup` → catálogo + precios de referencia *(fuente por definir: catálogo Bitrix24,
-    Google Sheet o base de datos — ver §6)*.
+  - `product_lookup` → catálogo + precios de referencia desde **DB / ERP** (vía API; ver §6).
   - `crm_find_contact`, `crm_create_lead` / `crm_update_contact`.
   - `openlines_transfer`.
 - **Salida/handoff**: entrega precios de referencia con el disclaimer B2B/B2C; al tener cliente +
@@ -86,7 +85,7 @@ Cada ficha define: **propósito**, **datos que capta**, **herramientas/fuentes**
 - **Propósito**: consultas sobre pedidos existentes, estado, reclamos, garantías, devoluciones.
 - **Capta**: identificación del cliente (contacto existente), N.º de pedido/factura, motivo, evidencia.
 - **Herramientas/fuentes**:
-  - `order_lookup` → estado del pedido *(fuente por definir: Deals/Smart Invoices de Bitrix24 o ERP — ver §6)*.
+  - `order_lookup` → estado del pedido desde el **ERP externo** (vía API; ver §6).
   - `crm_find_contact`; crear **actividad/ticket** de seguimiento.
   - `openlines_transfer` (cola de posventa).
 - **Salida/handoff**: responde estado si es consulta simple; si es reclamo/gestión → registra y deriva.
@@ -136,14 +135,18 @@ Cada ficha define: **propósito**, **datos que capta**, **herramientas/fuentes**
 
 Estas decisiones desbloquean a cada agente; las marcamos como pendientes:
 
-| Necesidad | Para | Opciones |
+| Necesidad | Para | Decisión |
 |---|---|---|
-| **Catálogo + precios de referencia** | Cotizador | Catálogo Bitrix24 (`crm.product.*`) · Google Sheet · DB · vector store |
-| **Sistema de pedidos** | Posventa | Bitrix24 Deals/Smart Invoices · ERP externo (API) |
-| **Base de conocimiento** | Información/Políticas/Marketing | Vector store (embeddings Ollama `nomic-embed-text`) · FAQ en Sheet |
-| **Disponibilidad/stock** | Información | ERP/inventario · Sheet · "deriva siempre" |
-| **Calendario de turnos** | Compras y Bodega | Google Calendar · Bitrix24 Calendar |
-| **Memoria persistente** | Todos | Postgres · Redis |
+| **Catálogo + precios de referencia** | Cotizador | ✅ **DB / ERP** (vía API) — *falta: endpoint, auth y esquema de respuesta* |
+| **Sistema de pedidos** | Posventa | ✅ **ERP externo** (vía API) — *falta: endpoint, auth y campos del pedido* |
+| **Base de conocimiento** | Información/Políticas/Marketing | *Por definir:* Vector store (embeddings Ollama `nomic-embed-text`) · FAQ en Sheet/MD |
+| **Disponibilidad/stock** | Información | *Por definir:* ERP/inventario · "deriva siempre" |
+| **Calendario de turnos** | Compras y Bodega | *Por definir:* Google Calendar · Bitrix24 Calendar |
+| **Memoria persistente** | Todos | *Por definir:* Postgres · Redis |
+
+> Para el **ERP** (cotizador y posventa) necesitaremos, cuando toque cada fase: URL base del API,
+> método de autenticación (API key / OAuth) y la forma de las respuestas (campos de producto/precio
+> y de pedido/estado). Con eso se definen los nodos `product_lookup` y `order_lookup`.
 
 ## 7. Cómo construiremos el JSON de n8n (método)
 
@@ -190,4 +193,55 @@ agente gigante; cada especialista se edita y prueba por separado.
 
 El **MVP (Fase 1)** es demostrable sin integraciones externas: clasifica intención, responde
 información de la empresa con la base de conocimiento y deriva a un asesor. Sobre esa base se
-enchufan los demás agentes uno a uno.
+enchufan los demás agentes uno a uno. **Arrancaremos por aquí.**
+
+## 9. Plano del MVP (Fase 1) — listo para construir
+
+Objetivo: validar router + un especialista + handoff, end-to-end, sin ERP. Dos workflows.
+
+### 9.1 Workflow Orquestador (`orquestador-mvp`)
+
+| # | Nodo | Tipo | Función |
+|---|---|---|---|
+| 1 | Webhook | `webhook` (POST `demaco-bot`) | recibe el evento imbot |
+| 2 | Parsear evento | `code` | normaliza `message/dialogId/chatId/user…` (reutiliza el de los workflows actuales) |
+| 3 | Validar | `if` | token `application_token`, mensaje no vacío, no es el propio bot |
+| 4 | Identificar contacto | `httpRequest` | `crm.duplicate.findbycomm` → `existe`, `contactId` |
+| 5 | Router | `agent` u `openAi`-style con Ollama, **salida JSON** | clasifica intención (ver §3); temp 0.1 |
+| 6 | Switch intención | `switch` | ramas: INFO · HUMANO · (resto → "aún no disponible") |
+| 7 | Llamar especialista | `executeWorkflow` | invoca el sub-workflow del agente con el **contrato** (§7) |
+| 8 | Handoff (si aplica) | `httpRequest` | `imopenlines.bot.session.operator` con `CHAT_ID` |
+| 9 | Enviar respuesta | `httpRequest` | `imbot.message.add` con `reply` |
+| 10 | 200 OK | `respondToWebhook` | cierra el webhook |
+
+> En el MVP, las intenciones aún sin agente (VENTAS, POSVENTA, COMPRAS, MARKETING) responden con
+> un mensaje cortés tipo "te comunico con un asesor" + handoff, para no dejar al cliente sin salida.
+
+### 9.2 Sub-workflow Agente Información (`agente-info`)
+
+| # | Nodo | Tipo | Función |
+|---|---|---|---|
+| 1 | Trigger | `executeWorkflowTrigger` | recibe el contrato de entrada |
+| 2 | AI Agent "Información" | `agent` | prompt experto en políticas/locales/horarios/empresa |
+| 2a | Modelo | `lmChatOllama` (`llama3.1`) | razonamiento |
+| 2b | Memoria | memory **Postgres** por `DIALOG_ID` | continuidad compartida entre agentes |
+| 2c | Herramienta | `kb_search` (vector store o, en el MVP, FAQ embebida en el prompt) | base de conocimiento |
+| 3 | Salida | `set` | arma `{ reply, handoff, cola, accionCRM }` |
+
+**Base de conocimiento del MVP**: para no bloquear, arrancamos con la info ya conocida (locales,
+horarios, transporte gratis > $50, formas de pago) **embebida en el system prompt** del agente.
+En la Fase 1.1 la migramos a un **vector store** (embeddings con Ollama `nomic-embed-text`) para
+que escale sin tocar el prompt.
+
+### 9.3 Criterios de aceptación del MVP
+1. Mensaje "¿a qué hora abren?" → router=`INFO_POLITICAS_STOCK` → agente responde horarios. ✅
+2. Mensaje "quiero cotizar 10 sacos de cemento" → router=`VENTAS_COTIZACION` → (sin agente aún)
+   mensaje de cortesía + **handoff** a ventas. ✅
+3. Mensaje "Operador" → router=`HUMANO` → **handoff** inmediato. ✅
+4. La memoria por `DIALOG_ID` mantiene el contexto entre turnos. ✅
+
+### 9.4 Lo que necesito para construir el MVP (cuando esté el entorno)
+- Entorno n8n + Ollama accesible (lo traes tú) con `llama3.1` descargado.
+- Webhook entrante de Bitrix24 + bot registrado (guías ya existentes en `setup/`).
+- **Postgres** para la memoria (o aceptar memoria por workflow en el MVP y migrar luego).
+- Confirmar el contenido exacto de la **base de conocimiento** inicial (políticas/horarios/locales).
