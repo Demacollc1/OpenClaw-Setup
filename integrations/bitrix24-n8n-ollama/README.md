@@ -47,11 +47,13 @@ integrations/bitrix24-n8n-ollama/
 ├── .env.example                           # Variables necesarias (Bitrix24 + Ollama)
 ├── workflows/
 │   ├── demaco-bot-ollama-n8n.json         # Variante A: determinista (HTTP)
-│   └── demaco-bot-agent-tools-n8n.json    # Variante B: AI Agent + herramientas nativas
+│   ├── demaco-bot-agent-tools-n8n.json    # Variante B: AI Agent + herramientas nativas
+│   └── mvp-orquestador-info-n8n.json      # MVP multi-agente: router + agente Información
 ├── prompts/
 │   └── system-prompt-demaco.md            # El prompt de Roberth (documentado)
 ├── design/
-│   └── flujo-multiagente.md               # Diseño: router + 5 agentes especializados
+│   ├── flujo-multiagente.md               # Diseño: router + 5 agentes especializados
+│   └── mvp-import.md                      # Guía para importar y probar el MVP
 └── setup/
     └── register-imbot.md                  # Registro único del chatbot en Bitrix24
 ```
