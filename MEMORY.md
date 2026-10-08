@@ -8,6 +8,7 @@
 ## ⚠️ Active Context (always load in main session)
 These files contain critical ongoing context. Load at session start.
 - `memory/people/user.md` — My human, always relevant
+- `memory/projects/centinela/INDICE.md` — **Proyecto activo CENTINELA** (n8n + Ollama + Wazzup). Punto de entrada; de ahí a `centinela.md` y temas.
 - `memory/projects/example-project.md` — Current active project
 
 ## 👤 People
@@ -21,6 +22,7 @@ These files contain critical ongoing context. Load at session start.
 ## 📁 Projects
 | Project | Status | Updated | Detail | Triggers |
 |---------|--------|---------|--------|----------|
+| CENTINELA | Active | 2026-10-08 | [centinela/INDICE.md](memory/projects/centinela/INDICE.md) | centinela, n8n, wazzup, ollama, whatsapp, telegram, casos |
 | Example Project | Active | [Date] | [example-project.md](memory/projects/example-project.md) | project, example |
 | Side Project | Planning | [Date] | [side-project.md](memory/projects/side-project.md) | side |
 | Learning Goal | Active | [Date] | [learning-goal.md](memory/projects/learning-goal.md) | learning |
