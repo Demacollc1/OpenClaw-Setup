@@ -21,6 +21,8 @@
 | 10 | Pitch comercial | [temas/10-pitch-comercial.md](temas/10-pitch-comercial.md) | Deck HTML + documento, URL del artefacto |
 | 11 | Bitrix24 (histórico) | [temas/11-bitrix24.md](temas/11-bitrix24.md) | Integración abandonada, por qué |
 | 12 | Seguridad (pendiente) | [temas/12-seguridad-pendientes.md](temas/12-seguridad-pendientes.md) | Tokens a regenerar, mover a .env |
+| 13 | MVP Bitrix (Router + KB) | [temas/13-mvp-bitrix-router-kb.md](temas/13-mvp-bitrix-router-kb.md) | Workflow viejo con activos reutilizables (router, memoria, handoff) |
+| 14 | Base de conocimiento DEMACO | [temas/14-base-conocimiento-demaco.md](temas/14-base-conocimiento-demaco.md) | Locales, horarios, teléfonos, políticas — para playbooks/RAG |
 
 ## 🔎 Cómo usar este índice
 1. ¿Pregunta general o estado? → `centinela.md`.
