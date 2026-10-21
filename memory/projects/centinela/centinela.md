@@ -26,7 +26,7 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 - Notificación de nuevo caso al gerente por Telegram.
 
 ### 🚧 En curso
-- **Playbooks + router por audiencia** (Fase 1 entregada; falta confirmar nombres de campos y probar). (`temas/07`)
+- **Playbooks + router por audiencia** — entregado workflow de prueba **v7** (copia inactiva) que hace que el bot redacte con playbook; a la espera de prueba del usuario. (`temas/07`)
 - **Bot operador Telegram → WhatsApp** (workflow entregado; falta confirmar prueba). (`temas/06`)
 
 ### ⏸️ Pendiente / diferido
@@ -50,9 +50,10 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 ---
 
 ## Changelog
+- **2026-10-21** — Leído el flujo v6 LIVE: las respuestas eran **plantillas fijas** (el LLM solo clasificaba). Entregado `Demaco-Atencion-WhatsApp-v7-PLAYBOOK-test.json` (copia inactiva) que inserta `Construir instrucciones` + `LLM responder` para que el bot **redacte** con playbook por audiencia (regla segura + fallback a plantilla). A la espera de prueba del usuario. (`temas/05`, `07`)
 - **2026-10-08** — Creada la base de memoria del proyecto (índice + temas + este doc). Bot operador y playbooks Fase 1 entregados y a la espera de pruebas.
 - *(histórico previo documentado en los archivos de `temas/`)*
 
 ---
 
-*Última actualización: 2026-10-08*
+*Última actualización: 2026-10-21*

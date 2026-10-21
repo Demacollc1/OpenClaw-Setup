@@ -2,6 +2,8 @@
 
 Estado: **funcionando** (recibe → entiende → responde → envía por Wazzup).
 
+> ⚠️ Matiz importante (confirmado en v6 LIVE): hoy el LLM **solo clasifica** (rol y tipo de caso). Las respuestas al cliente son **plantillas fijas** (acuse: "en un momento le contesto…"). La redacción real por LLM se agrega con los playbooks (v7). Ver `07-playbooks-router.md`.
+
 ## Modelo y conexión
 - `qwen3:8b` en Ollama, vía `http://host.docker.internal:11434`.
 - Importante: el modelo debe existir en el contenedor correcto. Hubo un 404 porque `qwen3:8b` no estaba en el contenedor `ollama:11434` (tenía `llama3.2`); se resolvió usando la **base URL real de la credencial** `host.docker.internal:11434`.

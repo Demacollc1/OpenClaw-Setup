@@ -28,7 +28,17 @@ Estado: **Fase 1 entregada (2 nodos)**; pendiente confirmar nombres de campos de
 | Info | solo aprobada | interna según rol |
 | Riesgo | reputacional → conservador | fuga de info → control por rol |
 
-## BLOQUEADOR actual
-Falta confirmar **con qué nombre llegan** `audiencia` y `tipo_caso` al llegar al Nodo 1. Pedir al usuario captura del output del nodo clasificador para ajustar las 2 líneas marcadas.
+## Integración real (confirmada al leer el flujo v6 LIVE)
+**Hallazgo clave:** en el flujo `Demaco - Atencion WhatsApp v6 (LIVE)` el LLM **solo clasifica**; las respuestas al cliente son **plantillas fijas** armadas en los Code nodes `Router + respuesta` y `Decidir caso` (ej. "en un momento le contesto sobre su caso de X"). No hay un "LLM responder" que redacte.
+
+Campos reales en el item de `Decidir caso`: `tipo` (= audiencia: cliente/empleado/proveedor/familia/amigo), `tipo_caso`, `nombre`, `empresa`, `mensaje`, `needs`, `estado_nuevo`, `hay_caso`, `reply`.
+
+**Solución entregada (v7 test):** `Demaco-Atencion-WhatsApp-v7-PLAYBOOK-test.json` (inactivo, copia). Inserta 2 nodos entre `Decidir caso` y `Hay caso?`:
+`Decidir caso → Construir instrucciones → LLM responder → Hay caso?`
+y apunta `Enviar respuesta (Wazzup)` y `Responder` al `reply` del LLM (con fallback a la plantilla).
+
+**Regla:** el LLM redacta SOLO si audiencia ∈ {cliente,empleado,proveedor}, sin `needs`, y `estado_nuevo` NO es confirmando_cierre/cerrado. En cierre, handoff, familia/amigo, o si el LLM falla → se mantiene la plantilla. Guiones adaptados a los tipos de caso reales.
+
+Pendiente: prueba del usuario con su número. Luego Fase 2 (playbooks a Data Table).
 
 > Regla de oro: 80% de la calidad viene de **playbooks + RAG**, no de cambiar el modelo.
