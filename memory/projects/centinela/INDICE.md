@@ -23,6 +23,7 @@
 | 12 | Seguridad (pendiente) | [temas/12-seguridad-pendientes.md](temas/12-seguridad-pendientes.md) | Tokens a regenerar, mover a .env |
 | 13 | MVP Bitrix (Router + KB) | [temas/13-mvp-bitrix-router-kb.md](temas/13-mvp-bitrix-router-kb.md) | Workflow viejo con activos reutilizables (router, memoria, handoff) |
 | 14 | Base de conocimiento DEMACO | [temas/14-base-conocimiento-demaco.md](temas/14-base-conocimiento-demaco.md) | Locales, horarios, teléfonos, políticas — para playbooks/RAG |
+| 15 | Inventario de workflows | [temas/15-inventario-workflows.md](temas/15-inventario-workflows.md) | Qué hace cada flujo en n8n y cuál es la base |
 
 ## 🔎 Cómo usar este índice
 1. ¿Pregunta general o estado? → `centinela.md`.
