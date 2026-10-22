@@ -16,5 +16,7 @@ Demuestra que **Centinela es una plataforma reutilizable** (n8n + IA + mensajer�
 ## Pendiente / notas
 - MVP con propiedades **inline**; migrar a Data Table `airbnb_propiedades` cuando crezca.
 - ⚠️ **WhatsApp 24h:** avisos proactivos fuera de ventana requieren **plantilla aprobada** en Wazzup/Meta. Para pruebas: el limpiador manda "hola" primero. Para producción: registrar plantilla de utilidad.
+- **Decisión del usuario (2026-10-22):** por ahora Opción 3 (WhatsApp tal cual + "hola"/"Listo" diario del limpiador para mantener la ventana de 24h). Intentará migrar al personal a **Telegram** (plan B, sin ventana). Si acepta → cambiar el canal del workflow a Telegram (5 min).
+- Truco sugerido: pedir que respondan "Listo" a cada aviso → confirma la limpieza y reabre la ventana de 24h.
 - Alternativa más simple/gratis para avisos proactivos: **Telegram**.
 - Ideas futuras: instrucciones de entrada al huésped, aviso "ya está limpio", reporte diario al dueño.
