@@ -26,6 +26,13 @@ Workflow pre-cargado con las 3 (links iCal reales validados, saludo por nombre):
 - Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
 - Diagnóstico útil: GET `https://api.wazzup24.com/v3/channels` (con Bearer key) para ver canales/estado; `returnFullResponse:true` en el POST para ver messageId/error real.
 
+## Evolución: confirmación + insumos por Telegram (en construcción, 2026-10-22)
+Requerimiento ampliado: el recordatorio debe preguntar al limpiador **qué día/hora irá** y **si necesita insumos**; la IA interpreta la respuesta y **avisa al gerente por Telegram** (con los insumos); y si el limpiador **no responde**, alerta al gerente. → Se decidió mover la interacción con limpiadores a **Telegram** (WhatsApp choca con el webhook del v6 y la ventana de 24h).
+- **Bot de limpieza creado:** @Limpiezairbnbot (t.me/Limpiezairbnbot). Token en credencial n8n "Telegram - Bot Limpieza" (NO se guarda aquí por seguridad).
+- **Paso 1 entregado:** `Limpieza-Registro-de-limpiadores.json` — captura chat_id + nombre cuando el limpiador escribe al bot. Pendiente: obtener los 3 chat IDs y mapearlos a cada propiedad.
+- Mapeo propiedad↔limpiador: Townhouse→Yamika, Vienna→Veronica, Salinas→Katty.
+- Próximo: flujo recordatorio (pregunta día/hora/insumos) + handler que interpreta con qwen3:8b + notifica al gerente (chat 7505702099) + chequeo de no-confirmación.
+
 ## Pendiente / notas
 - MVP con propiedades **inline**; migrar a Data Table `airbnb_propiedades` cuando crezca.
 - ⚠️ **WhatsApp 24h:** avisos proactivos fuera de ventana requieren **plantilla aprobada** en Wazzup/Meta. Para pruebas: el limpiador manda "hola" primero. Para producción: registrar plantilla de utilidad.
