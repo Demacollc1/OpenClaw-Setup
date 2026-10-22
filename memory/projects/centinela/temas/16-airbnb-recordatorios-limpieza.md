@@ -10,7 +10,7 @@ Demuestra que **Centinela es una plataforma reutilizable** (n8n + IA + mensajer�
 `Airbnb-Recordatorios-Limpieza.json` (inactivo). 3 nodos:
 `scheduleTrigger (18:00 diario) → Preparar recordatorios → Enviar (Wazzup)`.
 
-- **Preparar recordatorios:** lee lista inline `PROPIEDADES` [{nombre, ical_url, telefono}], hace GET al iCal, parsea VEVENT (DTSTART=check-in, DTEND=check-out), y si hay **check-out MAÑANA** arma el aviso (avisa si también hay check-in el mismo día = turnover prioritario). Zona Ecuador (UTC-5).
+- **Preparar recordatorios:** lee lista inline `PROPIEDADES` [{nombre, ical_url, telefono, limpiador}], hace GET al iCal, parsea VEVENT (DTSTART=check-in, DTEND=check-out), y si hay **check-out MAÑANA** arma el aviso. Zona Ecuador (UTC-5). **El mensaje indica la ventana de limpieza:** calcula la **próxima entrada** (menor check-in ≥ fecha de salida) → si es el mismo día = URGENTE antes de 15:00; si es posterior = "limpia entre [salida] y [próxima entrada]"; si no hay = "unidad libre, con calma". Saluda al limpiador por su nombre.
 - **Enviar (Wazzup):** POST `/v3/message` a cada limpiador. KEY desde `$env` / placeholder; canal `bb4d4d3a-...`.
 
 ## Propiedades configuradas (3) — 2026-10-22
