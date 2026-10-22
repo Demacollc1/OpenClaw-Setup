@@ -1,5 +1,7 @@
 # 16 · Airbnb — recordatorios de limpieza (nueva aplicación)
 
+> ✅ **PROBADO Y FUNCIONANDO (2026-10-22):** el aviso le llegó a Yamika por WhatsApp. Falta activar el flujo (toggle ON) tras restaurar la fecha normal, y verificar los números de Verónica y Katty cuando escriban.
+
 Demuestra que **Centinela es una plataforma reutilizable** (n8n + IA + mensajería + datos), no un solo bot. Caso: avisar al personal de limpieza las salidas/entradas de varios Airbnb.
 
 ## Decisiones del usuario

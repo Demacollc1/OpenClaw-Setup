@@ -50,6 +50,7 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 ---
 
 ## Changelog
+- **2026-10-22** — **Airbnb recordatorios de limpieza: PROBADO y FUNCIONANDO** (aviso llegó a Yamika por WhatsApp). 3 propiedades configuradas con iCal + ventana de limpieza. Bug resuelto: typo en número (chatId debe coincidir exacto con Wazzup). (`temas/16`)
 - **2026-10-21** — Revisado el MVP viejo de Bitrix (`temas/13`): trae activos reutilizables (router de intención, memoria, handoff) y una **base de conocimiento real de DEMACO** (`temas/14`: locales, horarios, políticas). Plan: inyectarla en el agente v7 (y luego RAG). 
 - **2026-10-21** — Leído el flujo v6 LIVE: las respuestas eran **plantillas fijas** (el LLM solo clasificaba). Entregado `Demaco-Atencion-WhatsApp-v7-PLAYBOOK-test.json` (copia inactiva) que inserta `Construir instrucciones` + `LLM responder` para que el bot **redacte** con playbook por audiencia (regla segura + fallback a plantilla). A la espera de prueba del usuario. (`temas/05`, `07`)
 - **2026-10-08** — Creada la base de memoria del proyecto (índice + temas + este doc). Bot operador y playbooks Fase 1 entregados y a la espera de pruebas.
@@ -57,4 +58,4 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 
 ---
 
-*Última actualización: 2026-10-21*
+*Última actualización: 2026-10-22*
