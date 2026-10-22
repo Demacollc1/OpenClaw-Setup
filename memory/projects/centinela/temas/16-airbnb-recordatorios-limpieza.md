@@ -13,6 +13,13 @@ Demuestra que **Centinela es una plataforma reutilizable** (n8n + IA + mensajer�
 - **Preparar recordatorios:** lee lista inline `PROPIEDADES` [{nombre, ical_url, telefono}], hace GET al iCal, parsea VEVENT (DTSTART=check-in, DTEND=check-out), y si hay **check-out MAÑANA** arma el aviso (avisa si también hay check-in el mismo día = turnover prioritario). Zona Ecuador (UTC-5).
 - **Enviar (Wazzup):** POST `/v3/message` a cada limpiador. KEY desde `$env` / placeholder; canal `bb4d4d3a-...`.
 
+## Propiedades configuradas (3) — 2026-10-22
+Workflow pre-cargado con las 3 (links iCal reales validados, saludo por nombre):
+1. **Townhouse WFH2 M2 Miami** — Yamika Medina — WA 13053600635 (US +1).
+2. **Suit Vienna Ceibos** — Veronica Rodriguez — WA 593986675443.
+3. **Salinas Alcazar** — Katty Tigrero — WA 593969612342.
+(Los links iCal con token están embebidos en el nodo "Preparar recordatorios". Falta solo la API key de Wazzup en "Enviar (Wazzup)".)
+
 ## Pendiente / notas
 - MVP con propiedades **inline**; migrar a Data Table `airbnb_propiedades` cuando crezca.
 - ⚠️ **WhatsApp 24h:** avisos proactivos fuera de ventana requieren **plantilla aprobada** en Wazzup/Meta. Para pruebas: el limpiador manda "hola" primero. Para producción: registrar plantilla de utilidad.
