@@ -15,10 +15,14 @@ Demuestra que **Centinela es una plataforma reutilizable** (n8n + IA + mensajer�
 
 ## Propiedades configuradas (3) — 2026-10-22
 Workflow pre-cargado con las 3 (links iCal reales validados, saludo por nombre):
-1. **Townhouse WFH2 M2 Miami** — Yamika Medina — WA 13053600635 (US +1).
+1. **Townhouse WFH2 M2 Miami** — Yamika Medina — WA **13053600685** (US +1). ⚠️ OJO: el usuario dio 13053600635 pero el real (visto en Wazzup) es 13053600685. Corregido 2026-10-22.
 2. **Suit Vienna Ceibos** — Veronica Rodriguez — WA 593986675443.
 3. **Salinas Alcazar** — Katty Tigrero — WA 593969612342.
 (Los links iCal con token están embebidos en el nodo "Preparar recordatorios". Falta solo la API key de Wazzup en "Enviar (Wazzup)".)
+
+## Lección (debug)
+- Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
+- Diagnóstico útil: GET `https://api.wazzup24.com/v3/channels` (con Bearer key) para ver canales/estado; `returnFullResponse:true` en el POST para ver messageId/error real.
 
 ## Pendiente / notas
 - MVP con propiedades **inline**; migrar a Data Table `airbnb_propiedades` cuando crezca.
