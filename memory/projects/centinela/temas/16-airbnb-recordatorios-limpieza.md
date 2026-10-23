@@ -22,6 +22,14 @@ Workflow pre-cargado con las 3 (links iCal reales validados, saludo por nombre):
 3. **Salinas Alcazar** — Katty Tigrero — WA 593969612342.
 (Los links iCal con token están embebidos en el nodo "Preparar recordatorios". Falta solo la API key de Wazzup en "Enviar (Wazzup)".)
 
+## Giro: limpiadoras en WhatsApp (NO tienen Telegram) — 2026-10-23
+Las limpiadoras no usan Telegram → se descarta el bot de limpieza para ellas. **Hallazgo importante:** el canal Wazzup es WhatsApp **por QR** (transport `whatsapp`), que **NO tiene ventana de 24h ni plantillas** → los recordatorios proactivos por WhatsApp SÍ funcionan a cualquiera (el fallo anterior fue el typo de número, no la ventana). Las **alertas al gerente** sí van por Telegram (chat 7505702099, bot casos).
+
+Implementación entregada (en prueba):
+- **`preparar-recordatorios-v2.js`**: el recordatorio ahora pregunta día/hora + insumos.
+- **`Demaco-Atencion-v6-mas-Limpieza-TEST.json`**: copia de v6 con un bloque en "Router + respuesta" que detecta los números de las limpiadoras (Yamika 13053600685, Veronica 593986675443, Katty 593969612342) → interpreta la respuesta con qwen3:8b (día/hora/insumos JSON) → envía resumen al gerente por Telegram → responde "Gracias, anotado" a la limpiadora. No pasa por el flujo normal ni genera alerta de "contacto nuevo".
+- Pendiente: **punto 4** (alerta a Telegram si una limpiadora NO responde) — requiere tracking + chequeo programado.
+
 ## Lección (debug)
 - Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
 - Diagnóstico útil: GET `https://api.wazzup24.com/v3/channels` (con Bearer key) para ver canales/estado; `returnFullResponse:true` en el POST para ver messageId/error real.
