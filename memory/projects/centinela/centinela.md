@@ -50,6 +50,7 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 ---
 
 ## Changelog
+- **2026-10-23** — Consolidado **v8** (`Demaco-Atencion-v8-CONSOLIDADO-TEST.json`): v6 + limpiadoras (interpreta día/hora/insumos → Telegram al gerente) + playbooks/KB + fix "alerta de clasificación una sola vez" + respuestas reales del LLM. Reemplaza v7 y v6+limpieza. A prueba. (`temas/16`)
 - **2026-10-22** — 🚨 **BLOQUEADOR: certificado SSL de n8n.demaco.ec VENCIDO** → Telegram rechaza webhooks; bots de Telegram (registro limpieza, casos, operador) caídos. Wazzup/WhatsApp aún tolera. Requiere renovar cert en servidor (usuario sin acceso → pasar a admin). (`temas/16`)
 - **2026-10-22** — Bot Telegram de limpieza creado (@Limpiezairbnbot) + flujo de registro entregado. Requerimiento ampliado: preguntar día/hora/insumos, IA interpreta, avisa al gerente, alerta si no confirma.
 - **2026-10-22** — **Airbnb recordatorios de limpieza: PROBADO y FUNCIONANDO** (aviso llegó a Yamika por WhatsApp). 3 propiedades configuradas con iCal + ventana de limpieza. Bug resuelto: typo en número (chatId debe coincidir exacto con Wazzup). (`temas/16`)
@@ -60,4 +61,4 @@ n8n (`n8n.demaco.ec`) + Ollama local (`qwen3:8b`) + n8n Data Tables + Wazzup (Wh
 
 ---
 
-*Última actualización: 2026-10-22*
+*Última actualización: 2026-10-23*

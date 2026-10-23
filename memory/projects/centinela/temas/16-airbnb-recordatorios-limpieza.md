@@ -29,6 +29,7 @@ Implementación entregada (en prueba):
 - **`preparar-recordatorios-v2.js`**: el recordatorio ahora pregunta día/hora + insumos.
 - **`Demaco-Atencion-v6-mas-Limpieza-TEST.json`**: copia de v6 con un bloque en "Router + respuesta" que detecta los números de las limpiadoras (Yamika 13053600685, Veronica 593986675443, Katty 593969612342) → interpreta la respuesta con qwen3:8b (día/hora/insumos JSON) → envía resumen al gerente por Telegram → responde "Gracias, anotado" a la limpiadora. No pasa por el flujo normal ni genera alerta de "contacto nuevo".
 - Pendiente: **punto 4** (alerta a Telegram si una limpiadora NO responde) — requiere tracking + chequeo programado.
+- **Consolidado v8 (2026-10-23):** `Demaco-Atencion-v8-CONSOLIDADO-TEST.json` = v6 + limpiadoras + playbooks(KB) + fix "alerta una sola vez". Reemplaza v7 y v6+limpieza. Arregla 2 quejas del usuario: (1) antes pedía clasificar en CADA mensaje → ahora alerta 1 sola vez por número nuevo (usa `$getWorkflowStaticData` → `st.vistos`); (2) antes repetía plantilla fija → ahora el LLM redacta real con KB DEMACO. A prueba del usuario; si pasa, se vuelve el flujo principal (desactivar v6).
 
 ## Lección (debug)
 - Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
