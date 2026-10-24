@@ -42,3 +42,13 @@ y apunta `Enviar respuesta (Wazzup)` y `Responder` al `reply` del LLM (con fallb
 Pendiente: prueba del usuario con su número. Luego Fase 2 (playbooks a Data Table).
 
 > Regla de oro: 80% de la calidad viene de **playbooks + RAG**, no de cambiar el modelo.
+
+## Perfil de cliente / CRM-lite (2026-10-24, en construcción)
+Requerimiento del usuario al revisar playbooks: para CLIENTE, identificar por teléfono si es **nuevo o recurrente**, con **código de cliente** y **resumen de perfil** (preferencias, info).
+- Fuentes reales: **JD Edwards (ERP)** + **Bitrix24**. Decisión: **tabla propia en n8n** como fuente del bot; sincronizar JDE/Bitrix después (si hay API accesible — JDE requiere AIS/REST vía IT; Bitrix tiene REST ya usado).
+- **Tabla `clientes`** (a crear por el usuario): telefono (llave), codigo_cliente, nombre, empresa, estado (prospecto/cliente), resumen_perfil, preferencias, ultima_interaccion.
+- Flujo a construir: cliente escribe → buscar en `clientes` por telefono → si existe, personalizar (nombre, recurrente, perfil) en el prompt del LLM; si no, crear prospecto con código auto. Enriquecer perfil con el uso (la IA puede actualizar resumen_perfil).
+- Pendiente: el usuario crea la tabla y pasa el ID.
+
+## Borrador de playbooks (2026-10-24)
+Entregado `playbooks-centinela-borrador.md`: casos comunes + respuestas modelo por relación (cliente/proveedor/empleado/familia-amigo), alineados a los tipos de caso del clasificador. Método acordado: usar base, corregir con casos reales, crecer con el uso; luego Fase 2 (tabla editable).
