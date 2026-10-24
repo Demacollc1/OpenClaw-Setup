@@ -48,7 +48,9 @@ Requerimiento del usuario al revisar playbooks: para CLIENTE, identificar por te
 - Fuentes reales: **JD Edwards (ERP)** + **Bitrix24**. Decisión: **tabla propia en n8n** como fuente del bot; sincronizar JDE/Bitrix después (si hay API accesible — JDE requiere AIS/REST vía IT; Bitrix tiene REST ya usado).
 - **Tabla `clientes`** (a crear por el usuario): telefono (llave), codigo_cliente, nombre, empresa, estado (prospecto/cliente), resumen_perfil, preferencias, ultima_interaccion.
 - Flujo a construir: cliente escribe → buscar en `clientes` por telefono → si existe, personalizar (nombre, recurrente, perfil) en el prompt del LLM; si no, crear prospecto con código auto. Enriquecer perfil con el uso (la IA puede actualizar resumen_perfil).
-- Pendiente: el usuario crea la tabla y pasa el ID.
+- Tabla `clientes` creada: ID **`9X1ZUe2wgUuxRgoU`** (proyecto EgGlivLJ3qfbKfL8). CSV de carga entregado.
+- **v9 entregado** (`Demaco-Atencion-v9-Clientes-TEST.json`): agrega nodo "Buscar cliente" (get por telefono) + "Construir instrucciones" ahora inyecta el perfil (nombre/codigo/estado/resumen/preferencias) y personaliza; marca `crear_prospecto` si cliente no existe. A prueba.
+- Pendiente siguiente: **auto-crear prospecto** (insert en `clientes` con código auto cuando `crear_prospecto`), y enriquecer perfil con el uso. Sync JDE/Bitrix más adelante.
 
 ## Borrador de playbooks (2026-10-24)
 Entregado `playbooks-centinela-borrador.md`: casos comunes + respuestas modelo por relación (cliente/proveedor/empleado/familia-amigo), alineados a los tipos de caso del clasificador. Método acordado: usar base, corregir con casos reales, crecer con el uso; luego Fase 2 (tabla editable).
