@@ -2,7 +2,7 @@
 ### Ferretería DEMACO · guía de respuestas del bot por WhatsApp
 
 > Estados: **[LISTO]** implementado · **[EN MONTAJE]** en construcción · **[POR CONFIRMAR]** falta tu decisión.
-> Última actualización: 2026-10-25.
+> Última actualización: 2026-10-25 (rev. compra/logística/crédito).
 
 ---
 
@@ -44,13 +44,29 @@ Una sola consulta al **catálogo de Oracle/JD** responde "¿lo tienen?" y "¿cu�
 | **C1** | Identificar / perfil | Reconoce nuevo vs. recurrente; usa nombre y preferencias. | **[LISTO]** |
 | **C2** | **Precio** (*"¿cuánto cuesta la tubería PVC 2\"?"*) | Identifica producto → **PVP de Oracle/JD**. 1 resultado: da el PVP. Varios: lista de opciones y pregunta cuál. Ninguno/dudoso: usa alias o pregunta. | **[EN MONTAJE]** (falta Oracle) |
 | **C3** | **¿Lo tienen? / info** (*"¿manejan grifería?"*) | Busca en catálogo. Si está → "Sí, lo manejamos" (+PVP si aplica). Si no → no lo afirma; pide detalle o deriva. Stock puntual → asesor. | **[EN MONTAJE]** (falta Oracle) |
-| **C4** | Horarios / ubicación | "Tenemos varios locales en Guayaquil: Matriz (Cdla. Santa Leonor, 04-606-592), Américas, Centro, Portete. ¿Cuál le queda mejor?" | [POR CONFIRMAR] |
-| **C5** | Entregas / logística | "Sí. Transporte **gratis en compras sobre $50**. Para coordinar necesito dirección, ciudad y contacto de quien recibe." | [POR CONFIRMAR] |
+| **C4** | **Horarios / ubicaciones** | Responde con los datos verificados de locales (dirección, teléfono, correo) de la base de conocimiento. Pregunta la ciudad si no la dice. | **[LISTO]** (datos en KB) |
+| **C5** | **Entregas / Retiro** | Pregunta si es **envío a domicilio** o **retiro en local**. Según eso recopila datos (envío) o explica el procedimiento (retiro). *Ver detalle abajo.* | [POR DEFINIR] |
 | **C6** | Reclamo / garantía | "Lamento mucho el inconveniente 🙏. ¿Qué pasó y su número de pedido? Lo escalo a un asesor." *(+ aviso a Telegram al gerente)* | [POR CONFIRMAR] |
-| **C7** | Crédito | "Con gusto. El crédito lo evalúa un asesor comercial; le comparto los requisitos." | [POR CONFIRMAR] |
+| **C7** | **Crédito (apertura)** | Guía la **solicitud de crédito**: recopila los datos/documentos requeridos y la deriva a aprobación. *Ver detalle abajo.* | [POR DEFINIR] |
 | **C8** | Factura | "Claro. ¿Me confirma su RUC/cédula y el número de pedido para gestionar su factura?" | [POR CONFIRMAR] |
+| **C9** | **Confirmar compra / Cotización** | Cuando el cliente quiere comprar, el bot recopila los datos necesarios y **crea una cotización/orden de venta vía webservice**. *Ver detalle abajo.* | [POR DEFINIR] (webservice) |
 
-**Dudas de cliente:** C5 (¿pasamos dirección a logística? ¿costo bajo $50?) · C6 (¿aviso a Telegram? ¿a quién escala?) · C7 (¿pide requisitos o solo deriva?).
+### C9 — Confirmar compra / Cotización (webservice)
+Cuando el cliente confirma que quiere comprar, el bot:
+1. Recopila lo necesario: **producto(s) + cantidad**, **cliente** (código/RUC; usa la tabla `clientes`), y **tipo de entrega** (envío o retiro).
+2. Toma el **precio del catálogo (Oracle)**.
+3. **Crea la cotización / orden de venta** llamando al **webservice**.
+4. Le confirma al cliente el número de cotización y los siguientes pasos.
+*Necesito de IT: URL del webservice, autenticación y los **campos obligatorios** para crear la orden.*
+
+### C5 — Logística (detalle)
+- **Envío a domicilio:** el bot recopila los **datos completos**: nombre de quien recibe, teléfono, **dirección exacta**, ciudad, referencia, **geolocalización**, horario preferido. Transporte **gratis en compras sobre $50**.
+- **Retiro en local:** el bot **explica el procedimiento** (qué local, horario, qué debe presentar — cédula / número de cotización, estado de pago) y **asegura** que el cliente tenga toda la información y se cumplan los pasos antes de ir.
+
+### C7 — Crédito (detalle)
+El bot guía la **apertura de crédito**: recopila los **datos y documentos requeridos** (por definir) y la deriva a aprobación. *Necesito: los requisitos reales para abrir crédito.*
+
+**Dudas de cliente:** C6 (¿aviso a Telegram? ¿a quién escala?).
 
 ---
 
@@ -100,8 +116,11 @@ Una sola consulta al **catálogo de Oracle/JD** responde "¿lo tienen?" y "¿cu�
 
 ## 7. Pendientes / dependencias
 - **Oracle/JD (IT):** vista de solo-lectura (`codigo, descripcion, PVP, unidad`; ideal + activo/stock) + usuario read-only + apertura de red. → habilita C2/C3 y la detección de alias.
+- **Webservice de orden de venta (C9):** URL, autenticación y campos obligatorios para crear la cotización/orden.
+- **Requisitos de crédito (C7):** datos/documentos para abrir crédito.
+- **Procedimiento de retiro en local (C5):** pasos exactos (qué local, horario, qué presentar).
 - **Handler de alias (v4):** entregado (procesa Confirmar/Rechazar). Falta la **detección** (se arma con Oracle).
-- Confirmar C5/C6/C7; proveedor y empleado.
+- Confirmar C6; proveedor y empleado.
 - Enriquecer perfil de cliente con cada conversación.
 
 ### Tablas
