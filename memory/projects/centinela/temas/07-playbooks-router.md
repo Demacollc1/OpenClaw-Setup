@@ -52,5 +52,15 @@ Requerimiento del usuario al revisar playbooks: para CLIENTE, identificar por te
 - **v9 entregado** (`Demaco-Atencion-v9-Clientes-TEST.json`): agrega nodo "Buscar cliente" (get por telefono) + "Construir instrucciones" ahora inyecta el perfil (nombre/codigo/estado/resumen/preferencias) y personaliza; marca `crear_prospecto` si cliente no existe. A prueba.
 - Pendiente siguiente: **auto-crear prospecto** (insert en `clientes` con código auto cuando `crear_prospecto`), y enriquecer perfil con el uso. Sync JDE/Bitrix más adelante.
 
+## Precios + catálogo (Oracle/JD) + alias de productos (2026-10-25)
+- **Precios en vivo:** el bot dará el **PVP** consultando **Oracle (JD Edwards)**. Precios cambian varias veces al día → consulta en vivo. Nodo comunitario **`n8n-nodes-oracle-database` instalado**. Falta: **vista de solo-lectura** (codigo, descripcion, PVP, unidad; ideal + activo/stock) + **credencial Oracle (usuario solo-lectura)**. Seguridad: usuario read-only limitado a la vista.
+- **"¿Lo tienen?" = misma consulta al catálogo** (existencia). "Manejar" (catálogo) ≠ "stock hoy" (inventario). Hasta conectar Oracle, el bot NO afirma que tienen un producto.
+- **Alias de productos** (cliente llama distinto al producto): tabla **`productos_alias`** ID **`rUkAtRjJRILyTYxU`** (alias, termino_busqueda, codigo_producto, estado[activo/pendiente/rechazado], propuesto_por, fecha, notas). Flujo: catálogo no encuentra → busca alias → reintenta; si no, pregunta/deriva + registra término. El LLM resuelve sinónimos comunes; la tabla, los específicos.
+- **Aprendizaje con aprobación humana:** términos nuevos → Telegram al gerente con botones **[Confirmar]/[Rechazar]** → confirma = alias activo. Reutiliza el mecanismo de botones del bot de casos. **Falta: workflow "Clasificar y cerrar v3" (exportado)** para agregar el handler de alias, + Oracle para la detección.
+- Tabla `clientes` = `9X1ZUe2wgUuxRgoU`.
+
+## Playbook completo v2 (2026-10-25)
+Entregado `playbook-centinela-v2.md`: cliente/proveedor/empleado/familia-amigo/limpiadoras + comportamientos del sistema, con estados [LISTO]/[EN MONTAJE]/[POR CONFIRMAR]. Falta revisión del usuario de proveedor (P1-P3) y empleado (E1-E5), y dudas de cliente (reclamo→Telegram?, crédito, entregas).
+
 ## Borrador de playbooks (2026-10-24)
 Entregado `playbooks-centinela-borrador.md`: casos comunes + respuestas modelo por relación (cliente/proveedor/empleado/familia-amigo), alineados a los tipos de caso del clasificador. Método acordado: usar base, corregir con casos reales, crecer con el uso; luego Fase 2 (tabla editable).
