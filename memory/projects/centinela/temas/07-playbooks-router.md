@@ -56,7 +56,9 @@ Requerimiento del usuario al revisar playbooks: para CLIENTE, identificar por te
 - **Precios en vivo:** el bot dará el **PVP** consultando **Oracle (JD Edwards)**. Precios cambian varias veces al día → consulta en vivo. Nodo comunitario **`n8n-nodes-oracle-database` instalado**. Falta: **vista de solo-lectura** (codigo, descripcion, PVP, unidad; ideal + activo/stock) + **credencial Oracle (usuario solo-lectura)**. Seguridad: usuario read-only limitado a la vista.
 - **"¿Lo tienen?" = misma consulta al catálogo** (existencia). "Manejar" (catálogo) ≠ "stock hoy" (inventario). Hasta conectar Oracle, el bot NO afirma que tienen un producto.
 - **Alias de productos** (cliente llama distinto al producto): tabla **`productos_alias`** ID **`rUkAtRjJRILyTYxU`** (alias, termino_busqueda, codigo_producto, estado[activo/pendiente/rechazado], propuesto_por, fecha, notas). Flujo: catálogo no encuentra → busca alias → reintenta; si no, pregunta/deriva + registra término. El LLM resuelve sinónimos comunes; la tabla, los específicos.
-- **Aprendizaje con aprobación humana:** términos nuevos → Telegram al gerente con botones **[Confirmar]/[Rechazar]** → confirma = alias activo. Reutiliza el mecanismo de botones del bot de casos. **Falta: workflow "Clasificar y cerrar v3" (exportado)** para agregar el handler de alias, + Oracle para la detección.
+- **Aprendizaje con aprobación humana:** términos nuevos → Telegram al gerente con botones **[Confirmar]/[Rechazar]** → confirma = alias activo.
+  - **Handler ENTREGADO:** `Demaco-Clasificar-y-cerrar-v4-alias.json` = v3 + rama callback `al|ok|<alias>`/`al|no|<alias>` → If "Alias?" → update `productos_alias` estado activo/rechazado → confirma en Telegram. Superconjunto seguro de v3; activar desactivando v3 (mismo bot, 1 trigger). Bot casos = "mariainteligenteclawbot" cred `oq4WH3JQXyX8EsMp`, token 8758694075..., chat 7505702099.
+  - **Falta (otra mitad):** detección en el flujo de atención (cuando la búsqueda en catálogo Oracle falla → insert pending alias + enviar botones). Depende de Oracle.
 - Tabla `clientes` = `9X1ZUe2wgUuxRgoU`.
 
 ## Playbook completo v2 (2026-10-25)
