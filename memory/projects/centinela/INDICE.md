@@ -3,8 +3,9 @@
 > Punto de entrada para recuperar contexto del proyecto Centinela.
 > **Leer primero `centinela.md`** (estado actual y funciones). Luego entrar al tema que haga falta.
 
-## 📄 Documento maestro
+## 📄 Documentos maestros
 - [`centinela.md`](centinela.md) — **documento vivo**: qué es, arquitectura, estado de funciones, próximas acciones, changelog. *Mantener actualizado.*
+- [`playbook.md`](playbook.md) — **playbook oficial** (guiones de respuesta por relación: cliente/proveedor/empleado/familia/limpiadoras, precios/alias). *Mantener actualizado.*
 
 ## 📚 Temas (detalle)
 | # | Tema | Archivo | Para qué sirve |
