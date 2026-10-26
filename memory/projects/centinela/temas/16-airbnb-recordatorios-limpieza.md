@@ -31,6 +31,9 @@ Implementación entregada (en prueba):
 - Pendiente: **punto 4** (alerta a Telegram si una limpiadora NO responde) — requiere tracking + chequeo programado.
 - **Consolidado v8 (2026-10-23):** `Demaco-Atencion-v8-CONSOLIDADO-TEST.json` = v6 + limpiadoras + playbooks(KB) + fix "alerta una sola vez". Reemplaza v7 y v6+limpieza. Arregla 2 quejas del usuario: (1) antes pedía clasificar en CADA mensaje → ahora alerta 1 sola vez por número nuevo (usa `$getWorkflowStaticData` → `st.vistos`); (2) antes repetía plantilla fija → ahora el LLM redacta real con KB DEMACO. A prueba del usuario; si pasa, se vuelve el flujo principal (desactivar v6).
 
+## Ajuste ventana + preguntas (2026-10-26)
+`preparar-recordatorios-v3.js`: la ventana de limpieza se limita a **salida + 2 días** (antes usaba la próxima entrada, que podía ser un mes → sin sentido). Reglas: entra mismo día→URGENTE; entra dentro de 2 días→esa fecha es el tope; no hay reserva cercana→hasta salida+2. Además el mensaje ahora SÍ incluye las preguntas (día/hora + insumos).
+
 ## Lección (debug)
 - Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
 - Diagnóstico útil: GET `https://api.wazzup24.com/v3/channels` (con Bearer key) para ver canales/estado; `returnFullResponse:true` en el POST para ver messageId/error real.
