@@ -34,6 +34,30 @@ Implementación entregada (en prueba):
 ## Ajuste ventana + preguntas (2026-10-26)
 `preparar-recordatorios-v3.js`: la ventana de limpieza se limita a **salida + 2 días** (antes usaba la próxima entrada, que podía ser un mes → sin sentido). Reglas: entra mismo día→URGENTE; entra dentro de 2 días→esa fecha es el tope; no hay reserva cercana→hasta salida+2. Además el mensaje ahora SÍ incluye las preguntas (día/hora + insumos).
 
+## Número de reserva + formulario de pago (2026-10-28)
+`preparar-recordatorios-v4.js`: el recordatorio ahora **incluye el número de reserva** y el **link del formulario de pago**. Los limpiadores llenan ese formulario (Jotform) para solicitar el pago y necesitan poner el número de reserva.
+- **Hallazgo:** el iCal de Airbnb trae el código de reserva (`HMxxxxxxxx`) dentro de `DESCRIPTION` (URL `.../reservations/details/HMxxxx`). Se extrae con regex `/\/([HM][A-Z0-9]{8,})/` sobre el VEVENT **desfoldeado** (RFC 5545: líneas que empiezan con espacio/tab continúan la anterior → `unfold()`). Validado contra el iCal real de Salinas: cada reserva da un código único.
+- El código que se envía es el de la reserva **que sale** ese día (la que tiene `cout === target`).
+- **Formulario (Jotform):** "Solicitud para liquidación de servicios prestados de Airbnb" — id `261696761068065` — https://form.jotform.com/demacollc/airbnb. El mensaje le dice al limpiador que ingrese ahí el número de reserva.
+- Mensaje de ejemplo (Salinas, salida 29/10, entra 31/10):
+  ```
+  Hola Katty 👋
+  🧹 Recordatorio de limpieza
+  🏠 Salinas Alcazar
+  📤 Salida del huesped (check-out): 29/10/2026
+  🔑 Proxima entrada: 31/10/2026.
+  🧽 Debe quedar lista antes de esa fecha (entre el 29/10/2026 y el 31/10/2026).
+
+  👉 ¿Qué día y a qué hora irás a limpiar?
+  👉 ¿Necesitas algún insumo? (cloro, fundas, etc.)
+
+  💳 Para solicitar tu pago, llena este formulario:
+  https://form.jotform.com/demacollc/airbnb
+  🔖 Número de reserva (ingrésalo en el formulario): HMNJ4XZH3S
+  ```
+- Para aplicarlo: reemplazar el contenido del nodo **"Preparar recordatorios"** con `preparar-recordatorios-v4.js` (o importar el JSON actualizado `Airbnb-Recordatorios-Limpieza.json`). El nodo "Enviar (Wazzup)" no cambia.
+- Pendiente/ideas: si el formulario tuviera campo **prellenable** por URL, podríamos mandar el link con el número ya puesto (`?...=HMxxxx`) — hay que ver los nombres de campo del Jotform. Por ahora el limpiador lo copia del mensaje.
+
 ## Lección (debug)
 - Wazzup devuelve **ok/2xx aunque el número sea erróneo** → el mensaje se va a un chat distinto/vacío y NO aparece en el diálogo correcto. Verificar que el `telefono` (chatId) coincida EXACTO con el número que Wazzup muestra en el chat del contacto. (Caso Yamika: typo …0635 vs …0685.)
 - Diagnóstico útil: GET `https://api.wazzup24.com/v3/channels` (con Bearer key) para ver canales/estado; `returnFullResponse:true` en el POST para ver messageId/error real.
