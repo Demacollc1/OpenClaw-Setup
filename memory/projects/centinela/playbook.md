@@ -83,18 +83,23 @@ El bot guía la **apertura de crédito**: recopila los **datos y documentos requ
 
 ---
 
-## 4. 🟣 EMPLEADO (interno)
-**Tono:** directo y operativo. Puede recibir info interna según su rol.
+## 4. 🟣 EMPLEADO (interno) — MODELO NUEVO: solo CASOS (2026-10-28)
+**Decisión del usuario:** la IA **NO conversa** con empleados (le respondía como a cliente porque el prompt base la define como "asistente comercial"). En su lugar:
+- **Mensaje normal de un empleado → SILENCIO** (la IA no responde nada).
+- Si el empleado quiere algo, debe pedir **"crear caso"** (o "nuevo caso" / "/caso"). Ahí arranca una **recopilación paso a paso** y el caso queda registrado para seguimiento.
 
-| # | Caso | Respuesta | Estado |
-|---|---|---|---|
-| **E1** | Pendientes / casos | "Déjame revisar tus casos abiertos y te los listo." | [POR CONFIRMAR] |
-| **E2** | Info para atender cliente | "Ambato Centro: 03-282-5866 (izamba@demaco.ec). ¿Necesitas de otra sucursal?" | [POR CONFIRMAR] |
-| **E3** | Abastecimiento / stock | "Anotado, lo paso a abastecimiento. ¿Qué cantidad y para cuándo?" | [POR CONFIRMAR] |
-| **E4** | RRHH (permisos/pagos) | "Anotado. Lo reviso con RRHH. ¿Motivo y horario?" | [POR CONFIRMAR] |
-| **E5** | Logística / entregas | "Entendido. ¿Qué pedido, a qué dirección y para cuándo? Coordino con logística." | [POR CONFIRMAR] |
+### Flujo "Crear caso" (paso a paso, 5 preguntas)
+1. 📋 Área/tipo (abastecimiento, logística, RRHH, sistemas, ventas, otro)
+2. 📝 Descripción (qué necesita / qué pasó)
+3. 👤 Responsable del caso
+4. 🏬 Sucursal / área
+5. ⏱ Urgencia / para cuándo
 
-**Duda:** ¿empleados registrados con su rol? ¿qué ve cada rol?
+Al terminar: se crea el caso en la tabla `casos` con un **N° de seguimiento** (ref), se **avisa al gerente por Telegram** con todo el detalle (+ botón "Cerrar caso"), y se le confirma el número al empleado. El empleado puede escribir **"cancelar"** para abortar a mitad.
+
+**Implementación:** máquina de estados en `$getWorkflowStaticData('global').empIntake[telefono]` (nodo "Router + respuesta"). El empleado NO pasa por el LLM (`needs='empleado'` → `usar_llm=false`). El caso completo se persiste vía el camino existente Decidir caso → Crear caso → Notificar. Entregado en **`Demaco-Atencion-v10-TEST.json`**.
+
+**Pendiente:** definir las áreas/tipos oficiales y a quién se asigna cada una; luego podremos enrutar el aviso a la persona correcta (no solo al gerente).
 
 ---
 
